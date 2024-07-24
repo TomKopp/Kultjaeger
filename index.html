@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset="utf-8">
+    <meta name="description" content="Hesindescheibe">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Hesindescheibe</title>
+
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            background-color: black;
+            height: 100vh;
+            width: 100vw;
+        }
+
+        img {
+            position: absolute;
+            width: 720px;
+            height: 720px;
+            object-fit: contain;
+            /* animation: spin 10s linear infinite; */
+
+            user-drag: none;
+            user-select: none;
+            -moz-user-select: none;
+            -webkit-user-drag: none;
+            -webkit-user-select: none;
+            -ms-user-select: none;
+        }
+
+        #a {
+            clip-path: circle(359px at 359px 359.5px);
+        }
+
+        #b {
+            clip-path: circle(292px at 359px 359.5px);
+        }
+
+        #c {
+            clip-path: circle(211px at 357px 359px);
+        }
+
+        #d {
+            clip-path: circle(160px at 356px 359px);
+        }
+
+        #e {
+            clip-path: circle(79px at 356px 359px);
+        }
+
+        @keyframes spin {
+            0% {
+                transform: rotate(0deg);
+            }
+
+            100% {
+                transform: rotate(360deg);
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <img id="a" src="Scheibe_1.webp" class="draggable" draggable="false" />
+    <img id="b" src="Scheibe_2.webp" class="draggable" draggable="false" />
+    <img id="c" src="Scheibe_3.webp" class="draggable" draggable="false" />
+    <img id="d" src="Scheibe_4.webp" class="draggable" draggable="false" />
+    <img id="e" src="Scheibe_center_fixed.webp" draggable="false" />
+
+    <script>
+        let target = null;
+
+        const images = document.querySelectorAll('.draggable');
+        images.forEach((image, index) => {
+            image.rotation = 0;
+            image.alphaStart = 0;
+            image.alphaDiff = 0;
+
+            image.addEventListener('mousedown', (ev) => {
+                target = image;
+                const { clientX, clientY } = ev;
+                const { top, bottom, left, right } = target.getBoundingClientRect();
+                const cx = (left + right) / 2;
+                const cy = (top + bottom) / 2;
+                const dx = clientX - cx;
+                const dy = clientY - cy;
+                target.alphaStart = calculateAngle(dx, dy);
+            });
+        });
+
+        document.addEventListener('mousemove', (ev) => {
+            if (!target) return;
+            rAFcalculateDiscRotation(ev, target);
+        });
+        document.addEventListener('mouseup', () => {
+            if (!target) return;
+            target.rotation = target.rotation + target.alphaDiff;
+            target.alphaDiff = 0;
+
+            console.log(target.id, target.rotation);
+            target = null;
+        });
+
+
+        const rAFthrottle = (func, immediate = false) => {
+            if (typeof func !== 'function') {
+                throw new TypeError('Expected a function');
+            }
+
+            let rAFid;
+
+            return function throttled(...args) {
+                const later = () => {
+                    rAFid = null;
+                    if (!immediate) {
+                        func.apply(this, args);
+                    }
+                };
+                const callNow = immediate && !rAFid;
+
+                if (!rAFid) {
+                    rAFid = requestAnimationFrame(later);
+                }
+                if (callNow) {
+                    func.apply(this, args);
+                }
+            };
+        };
+
+        const calculateAngle = (dx, dy) => {
+            const angle = Math.atan2(dy, dx) * 180 / Math.PI;
+            return angle < 0 ? angle + 360 : angle;
+        };
+
+        const calculateDiscRotation = (ev, target) => {
+            const { clientX, clientY } = ev;
+            const { top, bottom, left, right } = target.getBoundingClientRect();
+            const cx = (left + right) / 2;
+            const cy = (top + bottom) / 2;
+            const dx = clientX - cx;
+            const dy = clientY - cy;
+
+            const alphaNow = calculateAngle(dx, dy);
+            const alphaDiff = alphaNow - target.alphaStart;
+            target.style.transform = `rotate(${target.rotation + alphaDiff}deg)`;
+            target.alphaDiff = alphaDiff;
+        };
+
+        const rAFcalculateDiscRotation = rAFthrottle(calculateDiscRotation);
+
+
+    </script>
+</body>
+
+</html>
